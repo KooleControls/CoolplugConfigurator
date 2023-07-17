@@ -19,6 +19,8 @@ namespace CoolmasterConfigurator
             coolPlug = new CoolPlugDevice();
             //comboBox1.DataSource = ports;
             RefreshComPorts();
+            if (checkBox_debug.Checked)
+                coolPlug.Console = textboxConsole;
         }
         public void RefreshComPorts()
         {
@@ -47,9 +49,7 @@ namespace CoolmasterConfigurator
             var portAdded = diff√dded.FirstOrDefault();
             var portRemoved = diffRemoved.FirstOrDefault();
 
-            ports.Clear();
-            foreach (var p in newList)
-                ports.Add(p);
+            RefreshComPorts();
 
             if (portAdded != null)
             {
@@ -60,7 +60,7 @@ namespace CoolmasterConfigurator
             if (portRemoved != null)
             {
                 textboxConsole.AppendLine($"{portRemoved} disconnected!", Color.FromArgb(unchecked((int)0xFFf542f5)));
-                if (checkBox2.Checked)
+                if (checkBox_clearAfter.Checked)
                     richTextBox1.Text = "";
             }
 
@@ -88,7 +88,7 @@ namespace CoolmasterConfigurator
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
-            if (checkBox1.Checked)
+            if (checkBox_debug.Checked)
                 coolPlug.Console = textboxConsole;
             else
                 coolPlug.Console = null;

@@ -31,8 +31,8 @@
             richTextBox1 = new RichTextBox();
             label2 = new Label();
             textBox3 = new TextBox();
-            checkBox1 = new CheckBox();
-            checkBox2 = new CheckBox();
+            checkBox_debug = new CheckBox();
+            checkBox_clearAfter = new CheckBox();
             SuspendLayout();
             // 
             // richTextBox1
@@ -40,7 +40,7 @@
             richTextBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             richTextBox1.Location = new Point(12, 41);
             richTextBox1.Name = "richTextBox1";
-            richTextBox1.Size = new Size(621, 397);
+            richTextBox1.Size = new Size(686, 397);
             richTextBox1.TabIndex = 2;
             richTextBox1.Text = "";
             // 
@@ -61,34 +61,38 @@
             textBox3.TabIndex = 7;
             textBox3.Text = "0x01";
             // 
-            // checkBox1
+            // checkBox_debug
             // 
-            checkBox1.AutoSize = true;
-            checkBox1.Location = new Point(229, 14);
-            checkBox1.Name = "checkBox1";
-            checkBox1.Size = new Size(61, 19);
-            checkBox1.TabIndex = 9;
-            checkBox1.Text = "Debug";
-            checkBox1.UseVisualStyleBackColor = true;
-            checkBox1.CheckedChanged += checkBox1_CheckedChanged;
+            checkBox_debug.AutoSize = true;
+            checkBox_debug.Checked = true;
+            checkBox_debug.CheckState = CheckState.Checked;
+            checkBox_debug.Location = new Point(229, 14);
+            checkBox_debug.Name = "checkBox_debug";
+            checkBox_debug.Size = new Size(61, 19);
+            checkBox_debug.TabIndex = 9;
+            checkBox_debug.Text = "Debug";
+            checkBox_debug.UseVisualStyleBackColor = true;
+            checkBox_debug.CheckedChanged += checkBox1_CheckedChanged;
             // 
-            // checkBox2
+            // checkBox_clearAfter
             // 
-            checkBox2.AutoSize = true;
-            checkBox2.Location = new Point(296, 15);
-            checkBox2.Name = "checkBox2";
-            checkBox2.Size = new Size(131, 19);
-            checkBox2.TabIndex = 10;
-            checkBox2.Text = "Clear on disconnect";
-            checkBox2.UseVisualStyleBackColor = true;
+            checkBox_clearAfter.AutoSize = true;
+            checkBox_clearAfter.Checked = true;
+            checkBox_clearAfter.CheckState = CheckState.Checked;
+            checkBox_clearAfter.Location = new Point(296, 14);
+            checkBox_clearAfter.Name = "checkBox_clearAfter";
+            checkBox_clearAfter.Size = new Size(131, 19);
+            checkBox_clearAfter.TabIndex = 10;
+            checkBox_clearAfter.Text = "Clear on disconnect";
+            checkBox_clearAfter.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(645, 450);
-            Controls.Add(checkBox2);
-            Controls.Add(checkBox1);
+            ClientSize = new Size(710, 450);
+            Controls.Add(checkBox_clearAfter);
+            Controls.Add(checkBox_debug);
             Controls.Add(label2);
             Controls.Add(textBox3);
             Controls.Add(richTextBox1);
@@ -102,7 +106,7 @@
         private RichTextBox richTextBox1;
         private Label label2;
         private TextBox textBox3;
-        private CheckBox checkBox1;
-        private CheckBox checkBox2;
+        private CheckBox checkBox_debug;
+        private CheckBox checkBox_clearAfter;
     }
 }
