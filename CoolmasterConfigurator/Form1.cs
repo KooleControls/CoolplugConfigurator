@@ -21,6 +21,8 @@ namespace CoolmasterConfigurator
             RefreshComPorts();
             if (checkBox_debug.Checked)
                 coolPlug.Console = textboxConsole;
+
+            this.Text = "Coolmaster configurator V00.00.01";
         }
         public void RefreshComPorts()
         {
