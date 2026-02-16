@@ -1,4 +1,4 @@
-name: Build and Release Application Files
+name: Build and Release CoolmasterConfigurator
 
 on:
   push:
@@ -16,7 +16,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          submodules: true
           fetch-depth: 0
 
       - name: Setup .NET
@@ -24,22 +23,20 @@ jobs:
         with:
           dotnet-version: "9.x"
 
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v2
-
       - name: Derive version info from tag
         id: ver
         shell: pwsh
         run: |
-          $tag = "${{ github.ref_name }}"  # v1.4.0-b1 or v1.4.0
+          $tag = "${{ github.ref_name }}"   # e.g. v1.4.0 or v1.4.1 or v1.4.0-b1
           if (-not $tag.StartsWith("v")) {
-            throw "Tag must start with 'v' (e.g., v1.4.0 or v1.4.0-b1). Got: $tag"
+            throw "Tag must start with 'v' (e.g., v1.4.0). Got: $tag"
           }
 
-          $version = $tag.Substring(1)     # 1.4.0-b1 or 1.4.0
+          $version = $tag.Substring(1)      # e.g. 1.4.0 or 1.4.1 or 1.4.0-b1
 
-          # Base numeric version for Assembly/File versions
-          $base = $version.Split("-")[0]   # 1.4.0
+          # We only care about MAJOR.MINOR.PATCH for versioning/prerelease logic.
+          # Suffix is ignored for classification; we strip it only to parse the numeric version.
+          $base = $version.Split("-")[0]    # 1.4.0 from 1.4.0-b1
           if ($base -notmatch "^\d+\.\d+\.\d+$") {
             throw "Base version must be MAJOR.MINOR.PATCH (e.g., 1.4.0). Got: $base (from tag $tag)"
           }
@@ -47,16 +44,12 @@ jobs:
           $parts = $base.Split(".")
           $patch = [int]$parts[2]
 
-          # Rule:
-          # - ONLY vX.Y.0 (with no suffix) is a release
-          # - everything else is prerelease
-          $hasSuffix = $version.Contains("-")
-          $isPrerelease = ($patch -ne 0) -or $hasSuffix
+          # Rule: x.x.0 => release, everything else => prerelease
+          $isPrerelease = ($patch -ne 0)
 
           # AssemblyVersion/FileVersion must be numeric (4-part)
-          $assembly = "$base.0"            # 1.4.0.0
+          $assembly = "$base.0"             # 1.4.0.0
 
-          # IMPORTANT: outputs are strings; keep booleans lowercase for reliable action input parsing
           $pr = $isPrerelease.ToString().ToLowerInvariant()
           $mkLatest = (!$isPrerelease).ToString().ToLowerInvariant()
 
@@ -69,12 +62,12 @@ jobs:
 
       - name: Restore
         shell: pwsh
-        run: dotnet restore "LogViewer/LogViewer.csproj"
+        run: dotnet restore "CoolmasterConfigurator/CoolmasterConfigurator.csproj"
 
       - name: Build
         shell: pwsh
         run: |
-          dotnet build "LogViewer/LogViewer.csproj" -c Release --no-restore `
+          dotnet build "CoolmasterConfigurator/CoolmasterConfigurator.csproj" -c Release --no-restore `
             /p:Version="${{ steps.ver.outputs.version }}" `
             /p:AssemblyVersion="${{ steps.ver.outputs.assembly }}" `
             /p:FileVersion="${{ steps.ver.outputs.assembly }}" `
@@ -84,7 +77,7 @@ jobs:
       - name: Publish (Portable)
         shell: pwsh
         run: |
-          dotnet publish "LogViewer/LogViewer.csproj" -c Release -o ./publish/portable --no-build `
+          dotnet publish "CoolmasterConfigurator/CoolmasterConfigurator.csproj" -c Release -o ./publish/portable --no-build `
             /p:Version="${{ steps.ver.outputs.version }}" `
             /p:AssemblyVersion="${{ steps.ver.outputs.assembly }}" `
             /p:FileVersion="${{ steps.ver.outputs.assembly }}" `
@@ -96,7 +89,7 @@ jobs:
         shell: pwsh
         run: |
           $tag = "${{ steps.ver.outputs.tag }}"
-          $zipName = "LogViewer_Portable_$tag.zip"
+          $zipName = "CoolmasterConfigurator_Portable_$tag.zip"
           Compress-Archive -Path ./publish/portable/* -DestinationPath ./$zipName -Force
           "zip=$zipName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
