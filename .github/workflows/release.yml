@@ -1,0 +1,112 @@
+name: Build and Release Application Files
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.x"
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Derive version info from tag
+        id: ver
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"  # v1.4.0-b1 or v1.4.0
+          if (-not $tag.StartsWith("v")) {
+            throw "Tag must start with 'v' (e.g., v1.4.0 or v1.4.0-b1). Got: $tag"
+          }
+
+          $version = $tag.Substring(1)     # 1.4.0-b1 or 1.4.0
+
+          # Base numeric version for Assembly/File versions
+          $base = $version.Split("-")[0]   # 1.4.0
+          if ($base -notmatch "^\d+\.\d+\.\d+$") {
+            throw "Base version must be MAJOR.MINOR.PATCH (e.g., 1.4.0). Got: $base (from tag $tag)"
+          }
+
+          $parts = $base.Split(".")
+          $patch = [int]$parts[2]
+
+          # Rule:
+          # - ONLY vX.Y.0 (with no suffix) is a release
+          # - everything else is prerelease
+          $hasSuffix = $version.Contains("-")
+          $isPrerelease = ($patch -ne 0) -or $hasSuffix
+
+          # AssemblyVersion/FileVersion must be numeric (4-part)
+          $assembly = "$base.0"            # 1.4.0.0
+
+          # IMPORTANT: outputs are strings; keep booleans lowercase for reliable action input parsing
+          $pr = $isPrerelease.ToString().ToLowerInvariant()
+          $mkLatest = (!$isPrerelease).ToString().ToLowerInvariant()
+
+          "tag=$tag"               | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "version=$version"       | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "base=$base"             | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "assembly=$assembly"     | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "prerelease=$pr"         | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "make_latest=$mkLatest"  | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Restore
+        shell: pwsh
+        run: dotnet restore "LogViewer/LogViewer.csproj"
+
+      - name: Build
+        shell: pwsh
+        run: |
+          dotnet build "LogViewer/LogViewer.csproj" -c Release --no-restore `
+            /p:Version="${{ steps.ver.outputs.version }}" `
+            /p:AssemblyVersion="${{ steps.ver.outputs.assembly }}" `
+            /p:FileVersion="${{ steps.ver.outputs.assembly }}" `
+            /p:InformationalVersion="${{ steps.ver.outputs.version }}" `
+            /p:ContinuousIntegrationBuild=true
+
+      - name: Publish (Portable)
+        shell: pwsh
+        run: |
+          dotnet publish "LogViewer/LogViewer.csproj" -c Release -o ./publish/portable --no-build `
+            /p:Version="${{ steps.ver.outputs.version }}" `
+            /p:AssemblyVersion="${{ steps.ver.outputs.assembly }}" `
+            /p:FileVersion="${{ steps.ver.outputs.assembly }}" `
+            /p:InformationalVersion="${{ steps.ver.outputs.version }}" `
+            /p:ContinuousIntegrationBuild=true
+
+      - name: Create zip archive (Portable)
+        id: zip
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.ver.outputs.tag }}"
+          $zipName = "LogViewer_Portable_$tag.zip"
+          Compress-Archive -Path ./publish/portable/* -DestinationPath ./$zipName -Force
+          "zip=$zipName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Create GitHub Release + upload asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          prerelease: ${{ steps.ver.outputs.prerelease }}
+          make_latest: ${{ steps.ver.outputs.make_latest }}
+          files: ${{ steps.zip.outputs.zip }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,8 +1,8 @@
+using CoolmasterConfigurator.CoolPlug;
 using System.ComponentModel;
 using System.IO.Ports;
 using System.Linq;
 using System.Windows.Forms;
-using CoolmasterConfigurator.CoolPlug;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CoolmasterConfigurator
@@ -22,7 +22,10 @@ namespace CoolmasterConfigurator
             if (checkBox_debug.Checked)
                 coolPlug.Console = textboxConsole;
 
-            this.Text = "Coolmaster configurator V00.01.00";
+
+            UpdateTitle();
+            _ =CheckForUpdates();
+            
         }
         public void RefreshComPorts()
         {
@@ -95,5 +98,36 @@ namespace CoolmasterConfigurator
             else
                 coolPlug.Console = null;
         }
+
+        private async Task CheckForUpdates()
+        {
+            toolStripStatusLabel1.Text = "Checking for application updates";
+            var latestVersion = await AppUpdateChecker.CheckForApplicationUpdates();
+            if (latestVersion == null)
+            {
+                toolStripStatusLabel1.Text = "Up-to-date";
+                return;
+            }
+
+            toolStripStatusLabel1.Text = $"New application available {latestVersion.ToString()}";
+            toolStripStatusLabel1.IsLink = true;
+            toolStripStatusLabel1.Click += (sender, e) =>
+            {
+                var url = $"https://github.com/KooleControls/LogViewer/releases";
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            };
+        }
+
+        private void UpdateTitle()
+        {
+
+            this.Text = ApplicationIdentity.GetAppTitle(ApplicationIdentity.GetAppVersion());
+        }
     }
 }
+
+
